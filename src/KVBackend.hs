@@ -6,33 +6,35 @@ module KVBackend (
     initKVBackend
    ,KVBackend ) where
 
-import Snap.Snaplet
-import Snap.Core
 import Control.Monad.IO.Class
 import Control.Applicative
 import Control.Monad
 import Control.Monad.State
 
-import Data.Text.Encoding
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.ByteString (ByteString)
+import Data.Text (Text)
+import Data.Text.Encoding
+
+import Snap.Snaplet
+import Snap.Core
 
 import KeyValueStorage
 
 data KVBackend = KVBackend { storage :: Storage }
 
-2type KVHandler r = forall a. Handler a KVBackend r
+type KVHandler r = forall a. Handler a KVBackend r
 
   
 getWaitDocR :: KVHandler ()
 getWaitDocR = withStorageAndKey $ \(storage,key) -> do
-  doc <- liftIO $ waitDoc storage k
+  doc <- liftIO $ waitDoc storage key
   writeBS . toStrict $ doc
 
 getDocR :: KVHandler ()
 getDocR = withStorageAndKey $ \(storage,key) -> do
-  mbDoc <- liftIO $ getDoc storage k
+  mbDoc <- liftIO $ getDoc storage key
   case mbDoc of
       Just doc -> writeBS . toStrict $ doc
       _        -> bad "Not found"
@@ -53,7 +55,7 @@ putDocR = withStorageAndKey $ \(storage,key) -> do
 getDirR :: KVHandler ()
 getDirR = withStorageAndKey $ \(storage,key) -> do
   values <- liftIO $ getDocs storage
-  good values
+  good . toStrict $ values
 
 routes = [("/hello",         writeText "hello world with snap")
          ,("/doc/:key",      method GET    $ getDocR)
