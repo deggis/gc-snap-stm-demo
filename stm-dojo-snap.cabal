@@ -35,7 +35,8 @@ Executable stm-dojo-snap
     time                      >= 1.1     && < 1.5,
     xmlhtml                   >= 0.1,
     stm                       >= 2.4,
-    containers                >= 0.5
+    containers                >= 0.5,
+    transformers              >= 0.3
 
   if flag(old-base)
     build-depends:
