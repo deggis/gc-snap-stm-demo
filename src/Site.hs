@@ -24,7 +24,7 @@ import           Heist
 import qualified Heist.Interpreted as I
 ------------------------------------------------------------------------------
 import           Application
-
+import           KVBackend
 
 ------------------------------------------------------------------------------
 -- | Render login form
@@ -84,5 +84,6 @@ app = makeSnaplet "app" "An snaplet example application." Nothing $ do
            initJsonFileAuthManager defAuthSettings sess "users.json"
     addRoutes routes
     addAuthSplices h auth
-    return $ App h s a
+    kv <- nestSnaplet "kv" kvbackend $ initKVBackend
+    return $ App h s a kv
 
