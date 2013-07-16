@@ -19,7 +19,7 @@ data App = App
     { _heist   :: Snaplet (Heist App)
     , _sess    :: Snaplet SessionManager
     , _auth    :: Snaplet (AuthManager App)
-    , _kvbackend :: Snaplet KVBackend
+    , _kvbackend :: Snaplet (KVBackend App)
     }
 
 makeLenses ''App

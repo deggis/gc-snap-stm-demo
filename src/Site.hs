@@ -84,6 +84,6 @@ app = makeSnaplet "app" "An snaplet example application." Nothing $ do
            initJsonFileAuthManager defAuthSettings sess "users.json"
     addRoutes routes
     addAuthSplices h auth
-    kv <- nestSnaplet "kv" kvbackend $ initKVBackend
+    kv <- nestSnaplet "kv" kvbackend $ initKVBackend auth
     return $ App h s a kv
 

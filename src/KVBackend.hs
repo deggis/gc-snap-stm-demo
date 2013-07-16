@@ -19,12 +19,14 @@ import Data.Text.Encoding
 
 import Snap.Snaplet
 import Snap.Core
+import Snap.Snaplet.Auth
 
 import KeyValueStorage
 
-data KVBackend = KVBackend { storage :: Storage }
+data KVBackend a = KVBackend { storage  :: Storage
+                             , authLens :: SnapletLens a (AuthManager a) }
 
-type KVHandler r = forall a. Handler a KVBackend r
+type KVHandler r = forall a. Handler a (KVBackend a) r
 
   
 getWaitDocR :: KVHandler ()
@@ -58,19 +60,18 @@ getDirR = withStorageAndKey $ \(storage,key) -> do
   good . toStrict $ values
 
 routes = [("/hello",         writeText "hello world with snap")
-         ,("/doc/:key",      method GET    $ getDocR)
-         ,("/doc/:key/wait", method GET    $ getWaitDocR)
-         ,("/doc/:key",      method DELETE $ deleteDocR)
-         ,("/doc/:key",      method PUT    $ putDocR)
-         ,("/dir",           method GET    $ getDirR)
+         ,("/doc/:key",      method GET    . requireLogin $ getDocR)
+         ,("/doc/:key/wait", method GET    . requireLogin $ getWaitDocR)
+         ,("/doc/:key",      method DELETE . requireLogin $ deleteDocR)
+         ,("/doc/:key",      method PUT    . requireLogin $ putDocR)
+         ,("/dir",           method GET    . requireLogin $ getDirR)
          ]
 
-initKVBackend :: SnapletInit a KVBackend
-initKVBackend = makeSnaplet "KVBackend" "STM dojo web with Snaplet" Nothing $ do
+initKVBackend :: SnapletLens a (AuthManager a) -> SnapletInit a (KVBackend a)
+initKVBackend authLens = makeSnaplet "KVBackend" "STM dojo web with Snaplet" Nothing $ do
     storage <- liftIO initStorage
     addRoutes routes
-    liftIO $ putDoc storage "avain" "docsi asdasdoasdasda"
-    return $ KVBackend storage
+    return $ KVBackend storage authLens
 
 
 -- helpers
@@ -98,3 +99,13 @@ withStorageAndKey handler =
 
 toStrict :: BL.ByteString -> B.ByteString
 toStrict = B.concat . BL.toChunks
+
+
+unauthorized :: KVHandler ()
+unauthorized = do
+    modifyResponse $ setResponseStatus 401 "Unauthorized"
+    writeText "Login required"
+
+requireLogin :: Handler a (KVBackend a) () -- ^ void handler to protect
+             -> Handler a (KVBackend a) ()
+requireLogin handler = (authLens <$> get) >>= \auth -> requireUser auth unauthorized $ handler
